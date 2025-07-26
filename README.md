@@ -1,1 +1,1 @@
-# SIMGE_OZGUNDONDU.JS
+# 🛒 Ebebek Product Carousel
