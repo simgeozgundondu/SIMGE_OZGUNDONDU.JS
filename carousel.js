@@ -147,12 +147,16 @@
                 margin: 0;
             }
 
-            .carousel-wrapper {
+            .ins-preview-wrapper .carousel-wrapper {
                 position: relative;
                 display: flex !important;
                 flex-direction: row !important;
                 align-items: center;
                 width: 100%;
+                padding-bottom: 16px;
+                border-bottom-left-radius: 35px !important;
+                border-bottom-right-radius: 35px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
 
 
@@ -509,12 +513,26 @@
 
             @media (max-width: 479px) {
                 .ebebek-carousel-container {
-                    max-width: 320px;
+                    max-width: 400px;
+                    padding: 0 20px;
                 }
                 .carousel-product-card {
-                    min-width: 280px;
-                    max-width: 280px;
-                    width: 280px;
+                    min-width: 158px !important;
+                    max-width: 190px !important;
+                    width: 190px !important;
+                }
+                .carousel-nav {
+                    display: none;
+                }
+                .carousel-wrapper {
+                    box-shadow: none !important;
+                }
+                .carousel-header {
+                    background: transparent !important;
+                    padding: 0 10px !important;
+                }
+                .carousel-title {
+                    font-size: 18px !important;
                 }
             }
         `;
@@ -781,22 +799,22 @@
         }
     };
 
-   // Navigate carousel
+      // Navigate carousel
     const navigateCarousel = (direction) => {
         const carouselItems = document.getElementById('carousel-items');
         if (!carouselItems) return;
 
-        const itemWidth = 300; // card width + gap
+        const scrollAmount = 260; // Fixed scroll amount
         const currentScroll = carouselItems.scrollLeft || 0;
         const maxScroll = carouselItems.scrollWidth - carouselItems.clientWidth;
-
+        
         let newScroll;
         if (direction === 'prev') {
-            newScroll = Math.max(0, currentScroll - itemWidth * 2);
+            newScroll = Math.max(0, currentScroll - scrollAmount);
         } else {
-            newScroll = Math.min(maxScroll, currentScroll + itemWidth * 2);
+            newScroll = Math.min(maxScroll, currentScroll + scrollAmount);
         }
-
+        
         // Use smooth scrolling with scrollLeft
         carouselItems.scrollLeft = newScroll;
     };
