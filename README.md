@@ -4,13 +4,13 @@ A JavaScript carousel component for the e-bebek homepage.
 
 ## Features
 
-- ✅ API product data fetching
-- ✅ Responsive carousel design
-- ✅ Homepage-only execution
-- ✅ Product navigation (new tab)
-- ✅ Price/discount display
-- ✅ Favorites with localStorage
-- ✅ Single JS file
+- API product data fetching
+- Responsive carousel design
+- Homepage-only execution
+- Product navigation (new tab)
+- Price/discount display
+- Favorites with localStorage
+- Single JS file
 
 ## Usage
 
