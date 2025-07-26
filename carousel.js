@@ -38,7 +38,6 @@
         // Set up event listeners
         setEvents();
 
-        console.log('Carousel loaded successfully!');
     };
 
     // Check on the homepage
@@ -550,7 +549,6 @@
             document.head.appendChild(styleElement);
         }
 
-        console.log('CSS injected successfully');
     };
 
     // Load products - first try localStorage, then API
@@ -562,7 +560,6 @@
                 state.products = JSON.parse(storedProducts);
                 renderCarousel();
             } else {
-                console.log('Fetching products from API...');
                 await fetchProductsFromAPI();
             }
         } catch (error) {
@@ -601,7 +598,6 @@
         carouselItems.innerHTML = allProductsHTML;
 
         state.isLoaded = true;
-        console.log('Carousel rendered with', state.products.length, 'products');
     };
 
     // Create individual product card HTML
