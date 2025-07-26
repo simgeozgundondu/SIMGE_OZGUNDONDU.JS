@@ -25,50 +25,85 @@
             return;
         }
 
+        // Load favorites from localStorage
+        loadFavorites();
+
         // Build the carousel structure
         buildHTML();
         buildCSS();
-        
+
         // Load products and render
         loadProducts();
+
+        // Set up event listeners
+        setEvents();
+
         console.log('Carousel loaded successfully!');
     };
 
     // Check on the homepage
     const isHomePage = () => {
         const current = window.location.href;
-        if (current.includes('e-bebek.com')) {
+        const url = new URL(current);
+        const pathname = url.pathname;
+
+        // Check if we're on the homepage (root path or index.html)
+        if (url.hostname === 'www.e-bebek.com' && (pathname === '/' || pathname === '')) {
             return true;
         }
         return false;
-    };  
+    };
+
+    // Load favorites from localStorage
+    const loadFavorites = () => {
+        try {
+            const stored = localStorage.getItem(CONFIG.FAVORITES_KEY);
+            state.favorites = stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+            state.favorites = [];
+        }
+    };
+
+    // Save favorites to localStorage
+    const saveFavorites = () => {
+        try {
+            localStorage.setItem(CONFIG.FAVORITES_KEY, JSON.stringify(state.favorites));
+        } catch (error) {
+            console.error('Error saving favorites:', error);
+        }
+    };
 
     // Build HTML structure
     const buildHTML = () => {
+        // Add Font Awesome CDN
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const fontAwesomeLink = document.createElement('link');
+            fontAwesomeLink.rel = 'stylesheet';
+            fontAwesomeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            document.head.appendChild(fontAwesomeLink);
+        }
+
         const container = document.createElement('div');
         container.className = 'carousel-container';
         container.innerHTML = `
             <div class="ebebek-carousel-container">
-                <div class="ebebek-carousel-header">
-                    <h2 class="ebebek-carousel-title">${CONFIG.CAROUSEL_TITLE}</h2>
+                <button class="carousel-nav carousel-prev" aria-label="Previous products">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="carousel-header">
+                    <h2 class="carousel-title">${CONFIG.CAROUSEL_TITLE}</h2>
                 </div>
-                <div class="ebebek-carousel-wrapper">
-                    <button class="ebebek-carousel-nav ebebek-carousel-prev" aria-label="Previous products">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="ebebek-carousel-track">
-                        <div class="ebebek-carousel-items" id="carousel-items">
+                <div class="carousel-wrapper">
+                    <div class="carousel-track">
+                        <div class="carousel-items" id="carousel-items">
                             <!-- Products will be inserted here -->
                         </div>
                     </div>
-                    <button class="ebebek-carousel-nav ebebek-carousel-next" aria-label="Next products">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
                 </div>
+                <button class="carousel-nav carousel-next" aria-label="Next products">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
             </div>
         `;
 
@@ -81,44 +116,47 @@
         const css = `
             :root {
                 --c-primaryColor: #f28e00;
-                --c-secondaryColor: #ff6b35;
+                --c-secondaryColor: #fef6eb;
             }
             .ebebek-carousel-container {
+                position: relative;
                 margin: 40px 0;
-                padding: 0 20px;
-                max-width: 1200px;
+                padding: 0 60px;
+                max-width: 1280px;
                 margin-left: auto;
                 margin-right: auto;
                 display: block;
             }
 
-            .ebebek-carousel-header {
-                text-align: center;
-                margin-bottom: 30px;
+            .ins-preview-wrapper .carousel-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background-color: var(--c-secondaryColor);
+                padding: 25px 67px;
+                border-top-left-radius: 35px !important;
+                border-top-right-radius: 35px !important;
             }
 
-            .ebebek-carousel-title {
-                font-size: 28px;
-                font-weight: 700;
+            .carousel-title {
+                font-family: Quicksand-Bold;
+                font-size: 3rem;
+                font-weight: 600;
+                line-height: 1.11;
                 color: var(--c-primaryColor);
                 margin: 0;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #fef6eb;
-                padding: 10px 20px;
-                border-radius: 8px;
-                display: inline-block;
             }
 
-            .ebebek-carousel-wrapper {
+            .carousel-wrapper {
                 position: relative;
                 display: flex !important;
                 flex-direction: row !important;
                 align-items: center;
-                gap: 20px;
                 width: 100%;
             }
 
-            .ebebek-carousel-track {
+
+            .carousel-track {
                 flex: 1 ;
                 overflow: hidden;
                 position: relative;
@@ -126,61 +164,75 @@
                 display: block;
             }
 
-            .ebebek-carousel-items {
+            .carousel-items {
                 display: flex !important;
                 flex-direction: row !important;
-                gap: 20px ;
+                gap: clamp(8px, 2vw, 20px);
                 transition: transform 0.3s ease-in-out;
                 padding: 10px 0;
                 overflow-x: auto;
                 overflow-y: hidden;
                 scroll-behavior: smooth;
-                scrollbar-width: none; 
+                scrollbar-width: none;
                 -ms-overflow-style: none;
-                white-space: nowrap;
                 width: 100% ;
             }
 
-            .ebebek-carousel-items::-webkit-scrollbar {
+            .carousel-items::-webkit-scrollbar {
                 display: none;
             }
 
-            .ebebek-carousel-nav {
+            .carousel-nav {
+                position: absolute;
+                top: 50%;
                 width: 48px;
                 height: 48px;
-                border: none;
+                border: 2px solid transparent;
                 border-radius: 50%;
-                background: #fef6eb;
-                color: #6c757d;
+                background: var(--c-secondaryColor);
+                color: var(--c-primaryColor);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s ease;
-                flex-shrink: 0;
             }
 
-            .ebebek-carousel-nav:hover {
-                background: #f5e6d3;
-                color: #495057;
-                transform: scale(1.05);
+            .carousel-nav i {
+                font-size: 20px;
+                font-weight: 900;
             }
 
-            .ebebek-carousel-nav:disabled {
+            .carousel-nav:hover {
+                color: var(--c-primaryColor);
+                border-color: var(--c-primaryColor);
+                background: #fff;
+            }
+
+
+
+            .carousel-nav:disabled {
                 opacity: 0.5;
                 cursor: not-allowed;
                 transform: none;
             }
 
-            .carousel-product-card {
-                min-width: 280px;
-                max-width: 280px;
-                width: 280px;
+            .carousel-prev {
+                left: 0px;
+            }
+
+            .carousel-next {
+                right: 0px;
+            }
+
+            .ins-preview-wrapper .carousel-product-card {
+                min-width: 242px;
+                max-width: 242px;
+                width: 242px;
                 background: white;
-                border-radius: 12px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                border-radius: 12px !important;
+                border: 1px solid rgb(225, 225, 225);
                 overflow: hidden;
-                transition: all 0.3s ease;
                 position: relative;
                 flex-shrink: 0;
                 flex-grow: 0;
@@ -189,8 +241,7 @@
             }
 
             .carousel-product-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border: 2px solid var(--c-primaryColor);
             }
 
             .carousel-product-image-container {
@@ -212,115 +263,123 @@
                 position: absolute;
                 top: 12px;
                 left: 12px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
                 z-index: 2;
             }
 
-            .carousel-product-badge {
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 600;
-                color: white;
-                text-transform: uppercase;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                max-width: 80px;
+            .badge-icon {
+                width: 55px;
+                height: 55px;
+                margin-right: 4px;
             }
 
-            .carousel-product-badge.bestseller {
-                background: #ff6b35;
-            }
-
-            .carousel-product-badge.star {
-                background: #ffc107;
-            }
-
-            .carousel-product-badge.freeshipping {
-                background: #28a745;
-            }
-
-            .carousel-product-favorite {
+            .ins-preview-wrapper .carousel-product-favorite {
                 position: absolute;
                 top: 12px;
                 right: 12px;
-                width: 32px;
-                height: 32px;
-                border: 2px solid #e9ecef;
-                border-radius: 50%;
-                background: white;
+                width: 50px;
+                height: 50px;
+                border-radius: 50% !important;
+                background: #fff;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 z-index: 2;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                overflow: hidden;
             }
 
             .carousel-product-favorite:hover {
-                border-color: #ff6b35;
+                border-color: var(--c-primaryColor);
+                background: #fff;
                 transform: scale(1.1);
             }
 
             .carousel-product-favorite.active {
-                background: #ff6b35;
-                border-color: #ff6b35;
+                background: #fff;
+                border-color: var(--c-primaryColor);
             }
 
-            .carousel-product-favorite svg {
-                width: 16px;
-                height: 16px;
-                fill: none;
-                stroke: #6c757d;
-                stroke-width: 2;
+            .carousel-product-favorite i {
+                font-size: 25px;
+                color: var(--c-primaryColor);
                 transition: all 0.2s ease;
             }
 
-            .carousel-product-favorite.active svg {
-                fill: white;
-                stroke: white;
+            .carousel-product-favorite.active i {
+                color: var(--c-primaryColor);
+            }
+
+            .carousel-product-favorite.active .far {
+                display: none !important;
+            }
+
+            .carousel-product-favorite.active .fas {
+                display: inline-block !important;
             }
 
             .carousel-product-content {
                 padding: 16px;
+                display: flex;
+                flex-direction: column;
+                height: 100%;
             }
 
             .carousel-product-name {
-                font-size: 14px;
-                font-weight: 500;
-                color: #212529;
+                font-size: 12px;
                 line-height: 1.4;
                 margin-bottom: 8px;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
+                display: block;
+                min-height: 40px;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                white-space: normal;
+                word-break: break-word;
+                max-width: 100%;
                 overflow: hidden;
-                height: 40px;
+            }
+
+            .carousel-product-name {
+                display: block;
+                height: 45px;
+                white-space: normal;
+                max-width: 100%;
+                margin-bottom: 8px;
+                line-height: 1.3;
+                white-space: normal;
+                word-wrap: break-word;
+                overflow: hidden;
+            }
+
+            .carousel-product-brand {
+                color:rgb(95, 103, 111);
+                font-weight: 700;
+            }
+
+            .carousel-product-name-text {
+                color:rgb(145, 148, 150);
+                font-weight: 500;
             }
 
             .carousel-product-rating {
-                display: flex;
                 align-items: center;
                 gap: 6px;
-                margin-bottom: 8px;
+                margin-bottom: 14px;
+                padding: 5px 0 15px;
             }
 
             .carousel-product-stars {
-                display: flex;
                 gap: 2px;
             }
 
             .carousel-product-star {
-                width: 14px;
-                height: 14px;
-                fill: #ffc107;
+                font-size: 14px;
+                color: #ffc107;
             }
 
             .carousel-product-star.empty {
-                fill: #e9ecef;
+                color: #e9ecef;
             }
 
             .carousel-product-reviews {
@@ -330,13 +389,15 @@
 
             .carousel-product-price {
                 margin-bottom: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
             .carousel-product-original-price {
                 font-size: 12px;
                 color: #6c757d;
                 text-decoration: line-through;
-                margin-bottom: 2px;
             }
 
             .carousel-product-current-price {
@@ -345,41 +406,43 @@
                 color: #28a745;
             }
 
+            .carousel-product-current-price.no-discount {
+                color: #6c757d;
+                margin-top: 38px;
+            }
+
             .carousel-product-discount {
                 display: inline-flex;
                 align-items: center;
                 gap: 4px;
-                padding: 2px 6px;
-                background: #28a745;
-                color: white;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 600;
-                margin-left: 8px;
+                color: #28a745;
+                font-size: 14px;
+                font-weight: 700;
             }
 
-            .carousel-product-offer {
+            .ins-preview-wrapper .carousel-product-offer {
                 background: #e8f5e8;
                 color: #28a745;
                 padding: 4px 8px;
-                border-radius: 6px;
+                border-radius: 12px !important;
                 font-size: 11px;
                 font-weight: 500;
                 margin-bottom: 12px;
                 text-align: center;
+                margin-top: auto;
             }
 
             .carousel-product-button {
                 width: 100%;
                 padding: 12px;
-                background: #fef6eb;
+                background: var(--c-secondaryColor);
                 color: var(--c-primaryColor);
-                border: 2px solid var(--c-primaryColor);
-                border-radius: 8px;
+                border-radius: 38px;
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                margin-top: auto;
             }
 
             .carousel-product-button:hover {
@@ -389,70 +452,69 @@
             }
 
             /* Responsive Design */
-            @media (max-width: 768px) {
+            @media (min-width: 1480px) {
                 .ebebek-carousel-container {
-                    padding: 0 10px;
+                    max-width: 1400px;
                 }
-
-                .ebebek-carousel-title {
-                    font-size: 24px;
-                }
-
-                .ebebek-carousel-wrapper {
-                    gap: 10px;
-                }
-
-                .ebebek-carousel-nav {
-                    width: 40px;
-                    height: 40px;
-                }
-
                 .carousel-product-card {
-                    min-width: 240px ;
-                    max-width: 240px ;
-                    width: 240px ;
-                }
-
-                .carousel-product-image-container {
-                    height: 160px;
-                }
-
-                .carousel-product-content {
-                    padding: 12px;
-                }
-
-                .carousel-product-name {
-                    font-size: 13px;
-                    height: 36px;
-                }
-
-                .carousel-product-current-price {
-                    font-size: 16px;
+                    min-width: 242px;
+                    max-width: 242px;
+                    width: 242px;
                 }
             }
 
-            @media (max-width: 480px) {
+            @media (max-width: 1479px) and (min-width: 1280px) {
+                .ebebek-carousel-container {
+                    max-width: 1280px;
+                }
+                .carousel-product-card {
+                    min-width: 272px;
+                    max-width: 272px;
+                    width: 272px;
+                }
+            }
+
+            @media (max-width: 1279px) and (min-width: 1024px) {
+                .ebebek-carousel-container {
+                    max-width: 1000px;
+                }
+                .carousel-product-card {
+                    min-width: 296px;
+                    max-width: 296px;
+                    width: 296px;
+                }
+            }
+
+            @media (max-width: 1023px) and (min-width: 768px) {
+                .ebebek-carousel-container {
+                    max-width: 800px;
+                }
+                .carousel-product-card {
+                    min-width: 240px;
+                    max-width: 240px;
+                    width: 240px;
+                }
+            }
+
+            @media (max-width: 767px) and (min-width: 480px) {
+                .ebebek-carousel-container {
+                    max-width: 600px;
+                }
                 .carousel-product-card {
                     min-width: 200px;
                     max-width: 200px;
                     width: 200px;
                 }
+            }
 
-                .carousel-product-image-container {
-                    height: 140px;
+            @media (max-width: 479px) {
+                .ebebek-carousel-container {
+                    max-width: 320px;
                 }
-
-                .carousel-product-content {
-                    padding: 10px;
-                }
-
-                .carousel-product-name {
-                    font-size: 12px;
-                    height: 32px;
-                }
-
-                .carousel-product-current-price {
-                    font-size: 14px;
+                .carousel-product-card {
+                    min-width: 280px;
+                    max-width: 280px;
+                    width: 280px;
                 }
             }
         `;
@@ -462,14 +524,14 @@
         styleElement.className = 'ebebek-carousel-styles';
         styleElement.textContent = css;
         styleElement.setAttribute('data-ebebek-carousel', 'true');
-        
+
         // Insert at the beginning of head
         if (document.head.firstChild) {
             document.head.insertBefore(styleElement, document.head.firstChild);
         } else {
             document.head.appendChild(styleElement);
         }
-        
+
         console.log('CSS injected successfully');
     };
 
@@ -477,9 +539,9 @@
     const loadProducts = async () => {
         try {
             const storedProducts = localStorage.getItem(CONFIG.STORAGE_KEY);
-            
+
             if (storedProducts) {
-                state.products = JSON.parse(storedProducts);    
+                state.products = JSON.parse(storedProducts);
                 renderCarousel();
             } else {
                 console.log('Fetching products from API...');
@@ -494,15 +556,15 @@
     const fetchProductsFromAPI = async () => {
         try {
             const res = await fetch(CONFIG.API_URL);
-            
+
             if (!res.ok) {
                 throw new Error('API error');
             }
-            
+
             const productsData = await res.json();
             state.products = productsData;
-            
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(productsData)); 
+
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(productsData));
             renderCarousel();
         } catch (error) {
             console.error('API fetch error:', error);
@@ -519,94 +581,226 @@
 
         const allProductsHTML = state.products.map(product => createProductCard(product)).join('');
         carouselItems.innerHTML = allProductsHTML;
-        
+
         state.isLoaded = true;
         console.log('Carousel rendered with', state.products.length, 'products');
     };
 
     // Create individual product card HTML
     const createProductCard = (product) => {
-        const isFavorite = state.favorites.includes(product.id);
-        const hasDiscount = product.price !== product.original_price;
-        const discountPercentage = hasDiscount
-             ? Math.round(((product.original_price - product.price) / product.original_price) * 100) 
-             : 0;
-        
-        // Generate random rating
-        const rating = Math.floor(Math.random() * 2) + 4; 
-        const reviews = Math.floor(Math.random() * 200) + 1; 
-        
-        // Generate random badges
-        const badges = [];
-        if (Math.random() > 0.7) badges.push('bestseller');
-        if (Math.random() > 0.8) badges.push('star');
-        if (Math.random() > 0.6) badges.push('freeshipping');
-   
+        const isProductInFavorites = state.favorites.includes(product.id);
 
-        return `
+        const hasProductDiscount = product.price !== product.original_price;
+
+        // Calculate discount percentage if product has discount
+        let discountPercentage = 0;
+        if (hasProductDiscount) {
+            const priceDifference = product.original_price - product.price;
+            const discountCalculation = (priceDifference / product.original_price) * 100;
+            discountPercentage = Math.round(discountCalculation);
+        }
+
+        // Generate random rating
+        const randomRatingNumber = Math.floor(Math.random() * 2);
+        const productRating = randomRatingNumber + 4;
+
+        // Generate random review
+        const randomReviewNumber = Math.floor(Math.random() * 200);
+        const productReviews = randomReviewNumber + 1;
+
+        // Generate random badges
+        const productBadges = [];
+
+        // 30% chance to add bestseller badge
+        const bestsellerRandom = Math.random();
+        if (bestsellerRandom > 0.7) {
+            productBadges.push('bestseller');
+        }
+
+        // 20% chance to add star product badge
+        const starRandom = Math.random();
+        if (starRandom > 0.8) {
+            productBadges.push('star');
+        }
+
+        // 40% chance to add free shipping badge
+        const shippingRandom = Math.random();
+        if (shippingRandom > 0.6) {
+            productBadges.push('freeshipping');
+        }
+
+        // Create badges HTML section
+        let badgesHTML = '';
+        if (productBadges.length > 0) {
+            badgesHTML = '<div class="carousel-product-badges">';
+
+            for (let i = 0; i < productBadges.length; i++) {
+                const currentBadge = productBadges[i];
+                let badgeImageHTML = '';
+
+                if (currentBadge === 'bestseller') {
+                    badgeImageHTML = '<img src="https://www.e-bebek.com/assets/images/cok-satan@2x.png" alt="Çok Satan" class="badge-icon">';
+                } else if (currentBadge === 'star') {
+                    badgeImageHTML = '<img src="https://www.e-bebek.com/assets/images/yildiz-urun@2x.png" alt="Yıldız Ürün" class="badge-icon">';
+                } else if (currentBadge === 'freeshipping') {
+                    badgeImageHTML = '<img src="https://www.e-bebek.com/assets/images/kargo-bedava@2x.png" alt="Kargo Bedava" class="badge-icon">';
+                }
+
+                badgesHTML += `<div class= "${currentBadge}">${badgeImageHTML}</div>`;
+            }
+
+            badgesHTML += '</div>';
+        }
+
+        // Create stars HTML section
+        let starsHTML = '<span class="carousel-product-stars">';
+        for (let i = 0; i < 5; i++) {
+            const isStarFilled = i < productRating;
+            const starClass = isStarFilled ? 'fas fa-star carousel-product-star' : 'fas fa-star carousel-product-star empty';
+            starsHTML += `<i class="${starClass}"></i>`;
+        }
+        starsHTML += '</span>';
+
+        // Create price HTML section
+        let priceHTML = '<div class="carousel-product-price">';
+
+        if (hasProductDiscount) {
+            priceHTML += '<div class="carousel-product-original-price">';
+            priceHTML += product.original_price.toFixed(2) + ' TL';
+            priceHTML += '<span class="carousel-product-discount">%' + discountPercentage;
+            priceHTML += '<i class="fas fa-chevron-down"></i></span></div>';
+        }
+
+        const currentPriceClass = hasProductDiscount ? 'carousel-product-current-price' : 'carousel-product-current-price no-discount';
+        priceHTML += '<div class="' + currentPriceClass + '">' + product.price.toFixed(2) + ' TL</div>';
+        priceHTML += '</div>';
+
+        // Create the product card HTML
+        const productCardHTML = `
             <div class="carousel-product-card" data-product-id="${product.id}">
                 <div class="carousel-product-image-container">
                     <img src="${product.img}" alt="${product.name}" class="carousel-product-image" loading="lazy">
-                    
-                    ${badges.length > 0 ? `
-                        <div class="carousel-product-badges">
-                            ${badges.map(badge => `
-                                <div class="carousel-product-badge ${badge}">
-                                    ${badge === 'bestseller' ? 'ÇOK SATAN' : 
-                                      badge === 'star' ? 'YILDIZ ÜRÜN' : 
-                                      badge === 'freeshipping' ? 'KARGO BEDAVA' : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="carousel-product-favorite ${isFavorite ? 'active' : ''}" data-product-id="${product.id}">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
+
+                    ${badgesHTML}
+
+                    <div class="carousel-product-favorite ${isProductInFavorites ? 'active' : ''}" data-product-id="${product.id}">
+                        <i class="far fa-heart"></i>
+                        <i class="fas fa-heart" style="display: none;"></i>
                     </div>
                 </div>
-                
+
                 <div class="carousel-product-content">
-                    <h3 class="carousel-product-name">${product.name}</h3>
-                    
+                    <div class="carousel-product-name">
+                        <span class="carousel-product-brand">${product.brand || 'Marka'}</span> - <span class="carousel-product-name-text">${product.name}</span>
+                    </div>
+
                     <div class="carousel-product-rating">
-                        <div class="carousel-product-stars">
-                            ${Array.from({length: 5}, (_, i) => `
-                                <svg class="carousel-product-star ${i < rating ? '' : 'empty'}" viewBox="0 0 24 24">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                            `).join('')}
-                        </div>
-                        <span class="carousel-product-reviews">(${reviews})</span>
+                        ${starsHTML}
+                        <span class="carousel-product-reviews">(${productReviews})</span>
                     </div>
-                    
-                    <div class="carousel-product-price">
-                        ${hasDiscount ? `
-                            <div class="carousel-product-original-price">${product.original_price.toFixed(2)} TL</div>
-                        ` : ''}
-                        <div class="carousel-product-current-price">
-                            ${product.price.toFixed(2)} TL
-                            ${hasDiscount ? `
-                                <span class="carousel-product-discount">
-                                    %${discountPercentage}
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M7 14l5-5 5 5z"/>
-                                    </svg>
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
+
+                    ${priceHTML}
+
                     <div class="carousel-product-offer">Farklı Ürünlerde 3 Al 2 Öde</div>
-                    
-                    
+
                     <button class="carousel-product-button">Sepete Ekle</button>
                 </div>
             </div>
         `;
+
+        return productCardHTML;
+    };
+
+    //Set up event listeners
+    const setEvents = () => {
+        // Navigation buttons
+        const prevBtn = document.querySelector('.carousel-prev');
+        const nextBtn = document.querySelector('.carousel-next');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => navigateCarousel('prev'));
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => navigateCarousel('next'));
+        }
+
+        document.addEventListener('click', handleGlobalClick);
+    };
+
+    // Handle global click events for carousel interactions
+    const handleGlobalClick = (event) => {
+        const clickedElement = event.target;
+
+        // Check if user clicked on a favorite button (heart icon)
+        const favoriteButtonElement = clickedElement.closest('.carousel-product-favorite');
+        if (favoriteButtonElement) {
+            const productIdFromButton = favoriteButtonElement.getAttribute('data-product-id');
+            const productIdAsNumber = parseInt(productIdFromButton);
+
+            toggleFavorite(productIdAsNumber, favoriteButtonElement);
+        }
+
+        // Check if user clicked on a product card
+        const productCardElement = clickedElement.closest('.carousel-product-card');
+        if (productCardElement) {
+            const productIdFromCard = productCardElement.getAttribute('data-product-id');
+            const productIdAsNumber = parseInt(productIdFromCard);
+
+            const isFavoriteButtonClick = clickedElement.closest('.carousel-product-favorite');
+            const isAddToCartButtonClick = clickedElement.closest('.carousel-product-button');
+
+            if (!isFavoriteButtonClick && !isAddToCartButtonClick) {
+                openProductPage(productIdAsNumber);
+            }
+        }
+    };
+
+    //Toggle favorite status
+    const toggleFavorite = (productId, buttonElement) => {
+        const isCurrentlyFavorite = state.favorites.includes(productId);
+
+        if (isCurrentlyFavorite) {
+            // Remove from favorites
+            state.favorites = state.favorites.filter(id => id !== productId);
+            buttonElement.classList.remove('active');
+        } else {
+            // Add to favorites
+            state.favorites.push(productId);
+            buttonElement.classList.add('active');
+        }
+
+        saveFavorites();
+    };
+
+    //Open product page in new tab
+    const openProductPage = (productId) => {
+        const product = state.products.find(p => p.id === productId);
+        if (product && product.url) {
+            window.open(product.url, '_blank');
+        }
+    };
+
+   // Navigate carousel
+    const navigateCarousel = (direction) => {
+        const carouselItems = document.getElementById('carousel-items');
+        if (!carouselItems) return;
+
+        const itemWidth = 300; // card width + gap
+        const currentScroll = carouselItems.scrollLeft || 0;
+        const maxScroll = carouselItems.scrollWidth - carouselItems.clientWidth;
+
+        let newScroll;
+        if (direction === 'prev') {
+            newScroll = Math.max(0, currentScroll - itemWidth * 2);
+        } else {
+            newScroll = Math.min(maxScroll, currentScroll + itemWidth * 2);
+        }
+
+        // Use smooth scrolling with scrollLeft
+        carouselItems.scrollLeft = newScroll;
     };
 
     init();
 
-})(); 
+})();
